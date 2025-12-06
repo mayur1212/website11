@@ -1,34 +1,29 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/auth/login/route.ts
+import { NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
-import { validateUser } from "@/lib/validators";
+import type { User, AppSession } from "@/types";
 
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { user: userData } = body;
-    
-    if (!userData) {
-      return NextResponse.json(
-        { error: "User data is required" },
-        { status: 400 }
-      );
-    }
+export async function POST(req: Request) {
+  const body = await req.json();
+  const user = body?.user as User | undefined;
 
-    // Validate and create properly typed User object
-    const user = validateUser(userData);
-
-    const session = await getSession();
-    session.user = user;
-    await session.save();
-
-    return NextResponse.json({ success: true, user: session.user });
-  } catch (error) {
-    console.error("Error logging in:", error);
-    const errorMessage = error instanceof Error ? error.message : "Failed to login";
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: error instanceof Error && errorMessage.includes("Invalid") ? 400 : 500 }
-    );
+  if (!user) {
+    return NextResponse.json({ success: false, message: "Missing user" }, { status: 400 });
   }
-}
 
+  const session = (await getSession()) as AppSession | null;
+  if (!session) {
+    // If your session runtime returns null when not initialized, handle gracefully
+    return NextResponse.json({ success: false, message: "No session" }, { status: 401 });
+  }
+
+  // store user on session
+  session.user = user;
+
+  // some session runtimes expose save(); call if present
+  if (typeof (session as any).save === "function") {
+    await (session as any).save();
+  }
+
+  return NextResponse.json({ success: true, user: session.user });
+}

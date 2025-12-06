@@ -1,4 +1,3 @@
-// src/app/movie/[slug]/page.tsx
 "use client";
 
 import React, { useState, useRef } from "react";
@@ -300,7 +299,7 @@ export default function MoviePage({ params }: { params: { slug: string } }) {
   const [activeDetailsTab, setActiveDetailsTab] =
     useState<DetailsTab>("REVIEWS");
 
-  // refs for scroll-sync tabs
+  // refs for scroll-sync tabs (explicitly nullable)
   const detailsScrollRef = useRef<HTMLDivElement | null>(null);
   const reviewsRef = useRef<HTMLDivElement | null>(null);
   const synopsisRef = useRef<HTMLDivElement | null>(null);
@@ -420,7 +419,8 @@ export default function MoviePage({ params }: { params: { slug: string } }) {
     { id: "POSTERS", label: "Posters" },
   ];
 
-  const sectionRefMap: Record<DetailsTab, React.RefObject<HTMLDivElement>> = {
+  // NOTE: allow nullable ref objects in typing
+  const sectionRefMap: Record<DetailsTab, React.RefObject<HTMLDivElement | null>> = {
     REVIEWS: reviewsRef,
     SYNOPSIS: synopsisRef,
     CAST: castRef,

@@ -1,4 +1,3 @@
-// src/components/DistrictCategorySection.tsx
 "use client";
 
 import React from "react";
@@ -13,15 +12,52 @@ import Image from "next/image";
  */
 
 const CATEGORIES = [
-  { id: "groceries", title: "Groceries", subtitle: "Daily essentials", image: "/assets/categories/groceries.jpg", href: "/stores/groceries" },
-  { id: "pharmacy", title: "Pharmacy", subtitle: "Medicines & health", image: "/assets/categories/pharmacy.jpg", href: "/stores/pharmacy" },
-  { id: "electronics", title: "Electronics", subtitle: "Gadgets & accessories", image: "/assets/categories/electronics.jpg", href: "/stores/electronics" },
-  { id: "fashion", title: "Fashion", subtitle: "Clothes & apparel", image: "/assets/categories/fashion.jpg", href: "/stores/fashion" },
-  { id: "home", title: "Home & Living", subtitle: "Furniture & decor", image: "/assets/categories/home.jpg", href: "/stores/home" },
-  { id: "beauty", title: "Beauty", subtitle: "Skincare & makeup", image: "/stores/beauty.jpg", href: "/stores/beauty" },
+  {
+    id: "groceries",
+    title: "Groceries",
+    subtitle: "Daily essentials",
+    image: "/assets/categories/groceries.jpg",
+    href: "/stores/groceries",
+  },
+  {
+    id: "pharmacy",
+    title: "Pharmacy",
+    subtitle: "Medicines & health",
+    image: "/assets/categories/pharmacy.jpg",
+    href: "/stores/pharmacy",
+  },
+  {
+    id: "electronics",
+    title: "Electronics",
+    subtitle: "Gadgets & accessories",
+    image: "/assets/categories/electronics.jpg",
+    href: "/stores/electronics",
+  },
+  {
+    id: "fashion",
+    title: "Fashion",
+    subtitle: "Clothes & apparel",
+    image: "/assets/categories/fashion.jpg",
+    href: "/stores/fashion",
+  },
+  {
+    id: "home",
+    title: "Home & Living",
+    subtitle: "Furniture & decor",
+    image: "/assets/categories/home.jpg",
+    href: "/stores/home",
+  },
+  {
+    id: "beauty",
+    title: "Beauty",
+    subtitle: "Skincare & makeup",
+    // fixed path to be consistent with other category images
+    image: "/assets/categories/beauty.jpg",
+    href: "/stores/beauty",
+  },
 ];
 
-export default function DistrictCategorySection(): JSX.Element {
+export default function DistrictCategorySection() {
   return (
     <section className="w-full bg-white py-10">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

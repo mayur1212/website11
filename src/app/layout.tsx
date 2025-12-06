@@ -1,3 +1,5 @@
+// src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -6,6 +8,7 @@ import { RegionProvider } from "@/contexts/RegionContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { getSession } from "@/lib/session";
 import { StructuredData } from "@/components/StructuredData";
+import type { AppSession, RegionData, Language } from "@/types"; // <-- ensure this path is correct
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,25 +30,24 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // getSession ab null bhi ho sakta hai, isliye optional chaining use karenge
-  const session = await getSession();
+  // Cast getSession() result to our AppSession | null so TS knows the optional fields exist
+  const session = (await getSession()) as AppSession | null;
 
-  const language = session?.language ?? "en";
+  const language: Language = session?.language ?? "en";
 
-  const region =
-    session?.region ?? {
-      country: undefined,
-      city: undefined,
-      cinema: undefined,
-    };
+  // region shape should match RegionData in src/types.ts
+  const region: RegionData = session?.region ?? {
+    country: "IN",
+    code: "IN",
+    city: undefined,
+    state: undefined,
+  };
 
   const user = session?.user ?? null;
 
   return (
     <html lang={language}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <StructuredData />
         <LanguageProvider initialLanguage={language}>
           <RegionProvider initialRegion={region}>

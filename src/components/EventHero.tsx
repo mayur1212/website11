@@ -1,4 +1,3 @@
-// src/components/EventHero.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -40,7 +39,7 @@ const SLIDES: EventSlide[] = [
   },
 ];
 
-export default function EventHero(): JSX.Element {
+export default function EventHero() {
   const [active, setActive] = useState<number>(0);
 
   // Auto-slide every 5s

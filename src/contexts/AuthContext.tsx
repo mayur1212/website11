@@ -1,8 +1,18 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { User } from "@/lib/session";
-import { isValidUser } from "@/lib/validators";
+import type { User } from "@/types";
+
+/**
+ * Simple type-guard for runtime validation of an unknown value as User.
+ * Adjust checks to match the minimal shape you require (id/email etc).
+ */
+function isValidUser(value: unknown): value is User {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  // ensure it has at least an id or email string (adapt if needed)
+  return typeof v.id === "string" || typeof v.email === "string";
+}
 
 interface AuthContextType {
   user: User | null;
@@ -29,17 +39,14 @@ export function AuthProvider({
       if (storedUser) {
         try {
           const parsed = JSON.parse(storedUser) as unknown;
-          // Validate the parsed user data using type guard
-          if (isValidUser(parsed)) {
-            return parsed;
-          }
+          if (isValidUser(parsed)) return parsed;
           return null;
         } catch {
           return null;
         }
       }
     }
-    return initialUser || null;
+    return initialUser ?? null;
   };
 
   const [user, setUserState] = useState<User | null>(getInitialUser);
@@ -51,10 +58,12 @@ export function AuthProvider({
       const storedUser = localStorage.getItem("user");
       if (!storedUser && initialUser) {
         localStorage.setItem("user", JSON.stringify(initialUser));
+        setUserState(initialUser);
       } else if (storedUser && !initialUser) {
-        // If we have localStorage but no initialUser, clear it (user logged out)
-        localStorage.removeItem("user");
-        setUserState(null);
+        // If we have localStorage but no initialUser, leave it as is (user persisted)
+        // If you want to clear on mount if initialUser absent, uncomment:
+        // localStorage.removeItem("user");
+        // setUserState(null);
       }
     }
     setIsLoading(false);
@@ -62,87 +71,78 @@ export function AuthProvider({
   }, []);
 
   const login = useCallback(async (userData: User) => {
-    // Update local state
+    // Update local state and storage immediately for snappy UI
     setUserState(userData);
-    
-    // Update localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(userData));
     }
-    
+
     // Sync with server session
     try {
-      const response = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user: userData }),
       });
-      
-      if (!response.ok) {
-        throw new Error("Failed to login");
+
+      if (!res.ok) {
+        // revert if server failed
+        setUserState(null);
+        if (typeof window !== "undefined") localStorage.removeItem("user");
+        throw new Error("Failed to login on server");
       }
-    } catch (error) {
-      console.error("Failed to sync user with server:", error);
-      // Revert local state on error
-      setUserState(null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("user");
-      }
-      throw error;
+    } catch (err) {
+      console.error("Failed to sync user with server:", err);
+      // already reverted above
+      throw err;
     }
   }, []);
 
   const logout = useCallback(async () => {
-    // Clear local state
+    // Optimistic local clear
     setUserState(null);
-    
-    // Clear localStorage
     if (typeof window !== "undefined") {
       localStorage.removeItem("user");
     }
-    
-    // Clear server session
+
+    // Clear server session (best-effort)
     try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
-    } catch (error) {
-      console.error("Failed to logout from server:", error);
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (err) {
+      console.error("Failed to logout from server:", err);
     }
   }, []);
 
-  const updateUser = useCallback(async (userData: Partial<User>) => {
-    if (!user) {
-      throw new Error("Cannot update user: not logged in");
-    }
-
-    // Update local state using functional update
-    setUserState((prevUser) => {
-      if (!prevUser) return null;
-      
-      const updatedUser = { ...prevUser, ...userData };
-      
-      // Update localStorage
-      if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+  const updateUser = useCallback(
+    async (userData: Partial<User>) => {
+      if (!user) {
+        throw new Error("Cannot update user: not logged in");
       }
-      
-      // Sync with server session
-      fetch("/api/auth/user", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user: updatedUser }),
-      }).catch((error) => {
-        console.error("Failed to sync user update with server:", error);
+
+      // Update local state using functional update to avoid stale closures
+      setUserState((prevUser) => {
+        if (!prevUser) return null;
+        const updatedUser = { ...prevUser, ...userData };
+        if (typeof window !== "undefined") {
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        }
+        return updatedUser;
       });
-      
-      return updatedUser;
-    });
-  }, [user]);
+
+      // Send only the partial update to server (server expects Partial<User>)
+      try {
+        await fetch("/api/auth/user", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData),
+        });
+      } catch (err) {
+        console.error("Failed to sync user update with server:", err);
+        // We keep the local optimistic update; you may decide to revert on failure.
+      }
+    },
+    [user]
+  );
 
   return (
     <AuthContext.Provider
@@ -167,4 +167,3 @@ export function useAuth() {
   }
   return context;
 }
-

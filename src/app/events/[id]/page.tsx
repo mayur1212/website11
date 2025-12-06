@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 
 import { EVENTS } from "@/components/EventCard";
 import EventGuideModal from "@/components/EventGuideModal";
+import type { EventItem } from "@/types";
 
 type Props = {
   params: {
@@ -17,13 +18,12 @@ type Props = {
 
 export default function EventDetails({ params }: Props) {
   const { id } = params;
-  const event = EVENTS.find((e) => e.id === Number(id));
+  const event = EVENTS.find((e) => e.id === Number(id)) as EventItem | undefined;
 
   const [guideOpen, setGuideOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
 
-  const FULL_TEXT = `
-India's favourite festival brings together food, music, live performances, curated activities, artistic zones,
+  const FULL_TEXT = `India's favourite festival brings together food, music, live performances, curated activities, artistic zones,
 pop-up funfair experiences, workshops, flea markets, gaming arenas, and much more. 
 
 Across the venue, you will find immersive art installations, interactive storytelling corners, 
@@ -37,7 +37,8 @@ culture, entertainment, learning, and creativity under one roof!
   const SHORT_TEXT = FULL_TEXT.slice(0, 200);
 
   const openGoogleMaps = () => {
-    const query = encodeURIComponent(event?.location || "");
+    const query = encodeURIComponent(event?.location ?? "");
+    if (!query) return;
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank");
   };
 
@@ -53,11 +54,12 @@ culture, entertainment, learning, and creativity under one roof!
       <div className="w-[86%] mx-auto pt-10 flex flex-col gap-8 lg:flex-row">
         <div className="w-full lg:w-[70%] rounded-2xl overflow-hidden shadow-lg">
           <Image
-            src={event.image}
-            alt={event.title}
+            src={event.image ?? "/movies/placeholder.jpg"}
+            alt={event.title ?? "Event"}
             width={1200}
             height={700}
             className="w-full h-[420px] object-cover"
+            priority
           />
         </div>
 
@@ -74,7 +76,13 @@ culture, entertainment, learning, and creativity under one roof!
             Starts from <span className="text-black">{event.price}</span>
           </p>
 
-          <button className="mt-4 w-full bg-black text-white py-3 rounded-xl text-sm font-semibold">
+          <button
+            className="mt-4 w-full bg-black text-white py-3 rounded-xl text-sm font-semibold"
+            aria-label="Book tickets"
+            onClick={() => {
+              /* integrate booking flow here */
+            }}
+          >
             BOOK TICKETS
           </button>
         </div>
@@ -103,6 +111,7 @@ culture, entertainment, learning, and creativity under one roof!
         <button
           onClick={() => setGuideOpen(true)}
           className="text-sm text-blue-600 font-medium"
+          aria-haspopup="dialog"
         >
           See all →
         </button>
@@ -149,6 +158,7 @@ culture, entertainment, learning, and creativity under one roof!
           <button
             onClick={openGoogleMaps}
             className="mt-3 px-4 py-2 bg-black text-white rounded-lg text-sm font-semibold"
+            aria-label="Get directions in Google Maps"
           >
             Get Directions
           </button>
